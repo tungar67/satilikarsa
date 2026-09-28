@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { SiteHeader } from "@/components/site-header";
 import { ClipPlayer } from "@/components/clip-player";
 import { defaultContent, ui, useSite, type PublicHolding, type PublicParcel, type SiteContent } from "@/lib/site-content";
-import { deleteClip, putClip } from "@/lib/media-store";
+import { deleteClip } from "@/lib/media-store";
+import { uploadPublic } from "@/lib/upload-media";
 import { tx, useLang, type Text } from "@/lib/lang";
 
 const GATE = "gencel";
@@ -21,6 +22,7 @@ function MaintenancePage() {
   const [error, setError] = useState("");
   const [draft, setDraft] = useState<SiteContent>(content);
   const [saved, setSaved] = useState(false);
+  const [problem, setProblem] = useState("");
   const draftRef = useRef(draft);
   draftRef.current = draft;
 
@@ -45,8 +47,13 @@ function MaintenancePage() {
   }
 
   function commit() {
-    save(draftRef.current);
-    setSaved(true);
+    setProblem("");
+    void save(draftRef.current)
+      .then(() => setSaved(true))
+      .catch(() => {
+        setSaved(false);
+        setProblem(tx(ui.saveFailed, lang));
+      });
   }
 
   function applyHolding(index: number, next: PublicHolding) {
@@ -60,8 +67,13 @@ function MaintenancePage() {
     const pictures =
       current != null && (next.gallery !== current.gallery || next.hero !== current.hero || next.videos !== current.videos);
     if (pictures) {
-      save(updated);
-      setSaved(true);
+      setProblem("");
+      void save(updated)
+        .then(() => setSaved(true))
+        .catch(() => {
+          setSaved(false);
+          setProblem(tx(ui.saveFailed, lang));
+        });
     }
   }
 
@@ -119,9 +131,16 @@ function MaintenancePage() {
               <button
                 type="button"
                 onClick={() => {
-                  reset();
-                  setDraft(structuredClone(defaultContent));
-                  setSaved(false);
+                  setProblem("");
+                  void reset()
+                    .then(() => {
+                      setDraft(structuredClone(defaultContent));
+                      setSaved(true);
+                    })
+                    .catch(() => {
+                      setSaved(false);
+                      setProblem(tx(ui.saveFailed, lang));
+                    });
                 }}
                 className="rounded-full border border-line px-5 py-3 text-sm"
               >
@@ -129,6 +148,7 @@ function MaintenancePage() {
               </button>
             </div>
             {saved ? <p className="text-sm text-olive">{tx(ui.saved, lang)}</p> : null}
+            {problem ? <p className="text-sm text-red-800">{problem}</p> : null}
           </div>
         ) : null}
       </main>
@@ -290,23 +310,16 @@ function HoldingEditor({ holding, onChange }: { holding: PublicHolding; onChange
           onChange={(e) => {
             const files = Array.from(e.target.files ?? []);
             e.target.value = "";
-            void Promise.all(
-              files.map(
-                (file) =>
-                  new Promise<{ src: string; alt: Text }>((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = () =>
-                      resolve({
-                        src: String(reader.result),
-                        alt: { en: file.name.replace(/\.[^.]+$/, ""), tr: file.name.replace(/\.[^.]+$/, "") },
-                      });
-                    reader.readAsDataURL(file);
-                  }),
-              ),
-            ).then((added) => {
+            void (async () => {
+              const added = [];
+              for (const file of files) {
+                const name = file.name.replace(/\.[^.]+$/, "");
+                const src = await uploadPublic(file, "photos");
+                added.push({ src, alt: { en: name, tr: name } });
+              }
               const next = [...holding.gallery, ...added];
               onChange({ ...holding, gallery: next, hero: holding.hero || next[0]?.src || "" });
-            });
+            })().catch(() => window.alert("Could not upload that picture."));
           }}
         />
       </label>
@@ -360,13 +373,12 @@ function HoldingEditor({ holding, onChange }: { holding: PublicHolding; onChange
             void (async () => {
               const added = [];
               for (const file of files) {
-                const id = crypto.randomUUID();
-                await putClip(id, file);
                 const name = file.name.replace(/\.[^.]+$/, "");
-                added.push({ src: `idb:${id}`, alt: { en: name, tr: name } });
+                const src = await uploadPublic(file, "videos");
+                added.push({ src, alt: { en: name, tr: name } });
               }
               onChange({ ...holding, videos: [...videos, ...added] });
-            })();
+            })().catch(() => window.alert("Could not upload that video."));
           }}
         />
       </label>

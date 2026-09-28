@@ -1,7 +1,8 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
-import { ContentProvider } from "@/lib/site-content";
+import { ContentProvider, freshen } from "@/lib/site-content";
 import { LanguageProvider } from "@/lib/lang";
+import { loadPublished } from "@/lib/published";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 import { SITE_DOMAIN } from "@/lib/site";
@@ -9,6 +10,10 @@ import { SITE_DOMAIN } from "@/lib/site";
 const APP_NAME = "Gencel Holdings";
 
 export const Route = createRootRoute({
+  loader: async () => {
+    const remote = await loadPublished();
+    return remote ? freshen(remote) : null;
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -30,7 +35,12 @@ export const Route = createRootRoute({
       { rel: "apple-touch-icon", href: "/__grok/icon-180.png" },
     ],
   }),
-  component: () => (
+  component: Root,
+});
+
+function Root() {
+  const initial = Route.useLoaderData();
+  return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
@@ -38,7 +48,7 @@ export const Route = createRootRoute({
       <body>
         <PreviewHostBridge />
         <AuthProvider>
-          <ContentProvider>
+          <ContentProvider initial={initial}>
             <LanguageProvider>
               <Outlet />
             </LanguageProvider>
@@ -47,5 +57,5 @@ export const Route = createRootRoute({
         <Scripts />
       </body>
     </html>
-  ),
-});
+  );
+}

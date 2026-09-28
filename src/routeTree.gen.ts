@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as MaintenanceRouteImport } from './routes/maintenance'
+import { Route as ApiBlobRouteImport } from './routes/api/blob'
 import { Route as HoldingsSlugRouteImport } from './routes/holdings.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -29,6 +30,11 @@ const MaintenanceRoute = MaintenanceRouteImport.update({
   path: '/maintenance',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBlobRoute = ApiBlobRouteImport.update({
+  id: '/api/blob',
+  path: '/api/blob',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HoldingsSlugRoute = HoldingsSlugRouteImport.update({
   id: '/holdings/$slug',
   path: '/holdings/$slug',
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
   '/maintenance': typeof MaintenanceRoute
+  '/api/blob': typeof ApiBlobRoute
   '/holdings/$slug': typeof HoldingsSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
   '/maintenance': typeof MaintenanceRoute
+  '/api/blob': typeof ApiBlobRoute
   '/holdings/$slug': typeof HoldingsSlugRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,28 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/contact': typeof ContactRoute
   '/maintenance': typeof MaintenanceRoute
+  '/api/blob': typeof ApiBlobRoute
   '/holdings/$slug': typeof HoldingsSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/contact' | '/maintenance' | '/holdings/$slug'
+  fullPaths: '/' | '/contact' | '/maintenance' | '/api/blob' | '/holdings/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/contact' | '/maintenance' | '/holdings/$slug'
-  id: '__root__' | '/' | '/contact' | '/maintenance' | '/holdings/$slug'
+  to: '/' | '/contact' | '/maintenance' | '/api/blob' | '/holdings/$slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/contact'
+    | '/maintenance'
+    | '/api/blob'
+    | '/holdings/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ContactRoute: typeof ContactRoute
   MaintenanceRoute: typeof MaintenanceRoute
+  ApiBlobRoute: typeof ApiBlobRoute
   HoldingsSlugRoute: typeof HoldingsSlugRoute
 }
 
@@ -92,6 +108,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MaintenanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/blob': {
+      id: '/api/blob'
+      path: '/api/blob'
+      fullPath: '/api/blob'
+      preLoaderRoute: typeof ApiBlobRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/holdings/$slug': {
       id: '/holdings/$slug'
       path: '/holdings/$slug'
@@ -106,6 +129,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ContactRoute: ContactRoute,
   MaintenanceRoute: MaintenanceRoute,
+  ApiBlobRoute: ApiBlobRoute,
   HoldingsSlugRoute: HoldingsSlugRoute,
 }
 export const routeTree = rootRouteImport

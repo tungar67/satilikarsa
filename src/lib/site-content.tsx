@@ -1,7 +1,10 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { holdings, type Holding as RawHolding } from "@/data/properties";
+import { MAINTENANCE_PASSWORD } from "@/lib/gate";
 import { text, type Text } from "@/lib/lang";
 import { clearClips } from "@/lib/media-store";
+import { publishContent } from "@/lib/published";
+import { publishable } from "@/lib/upload-media";
 
 export type Welcome = {
   siteName: Text;
@@ -191,8 +194,8 @@ const tr: Record<string, string> = {
   "Unlocked for this browser tab.": "Bu tarayıcı sekmesinde açık.",
   "Save changes": "Değişiklikleri kaydet",
   "Restore original text": "Özgün metne dön",
-  "Saved in this browser. The public tabs use this copy.":
-    "Bu tarayıcıya kaydedildi. Açık sekmeler bu kopyayı kullanır.",
+  "Saved. Every visitor sees this copy.": "Kaydedildi. Her ziyaretçi bu kopyayı görür.",
+  "Could not save for all visitors. Try again.": "Tüm ziyaretçiler için kaydedilemedi. Yeniden deneyin.",
   Maintenance: "Bakım",
   "This holding is not in the portfolio.": "Bu varlık portföyde yok.",
   "Back to Welcome": "Karşılama sayfasına dön",
@@ -249,8 +252,8 @@ export const defaultContent: SiteContent = {
 type Store = {
   content: SiteContent;
   ready: boolean;
-  save: (next: SiteContent) => void;
-  reset: () => void;
+  save: (next: SiteContent) => Promise<void>;
+  reset: () => Promise<void>;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -259,7 +262,7 @@ function isText(value: unknown): value is Text {
   return !!value && typeof value === "object" && "en" in value && "tr" in value;
 }
 
-function freshen(content: SiteContent): SiteContent {
+export function freshen(content: SiteContent): SiteContent {
   const migrated = { ...content.migrated };
   return {
     ...content,
@@ -331,26 +334,50 @@ function load(): SiteContent {
   }
 }
 
-export function ContentProvider({ children }: { children: React.ReactNode }) {
-  const [content, setContent] = useState<SiteContent>(defaultContent);
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    setContent(load());
-    setReady(true);
-  }, []);
-  const save = (next: SiteContent) => {
-    setContent(next);
+export function ContentProvider({ children, initial }: { children: React.ReactNode; initial: SiteContent | null }) {
+  const [content, setContent] = useState<SiteContent>(initial ?? defaultContent);
+  const [ready, setReady] = useState(initial != null);
+  const started = useRef(false);
+
+  const save = async (next: SiteContent) => {
+    const stored = await publishContent({ data: { password: MAINTENANCE_PASSWORD, content: await publishable(next) } });
+    setContent(stored);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
     } catch {
-      window.alert("Could not save. Added pictures may be too large for this browser.");
+      /* The server copy is what visitors see. */
     }
   };
-  const reset = () => {
+
+  const reset = async () => {
     localStorage.removeItem(STORAGE_KEY);
-    void clearClips();
-    setContent(structuredClone(defaultContent));
+    await clearClips();
+    await save(structuredClone(defaultContent));
   };
+
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    if (initial) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
+      } catch {
+        /* ignore quota */
+      }
+      setReady(true);
+      return;
+    }
+    const local = load();
+    const hasLocal = localStorage.getItem(STORAGE_KEY);
+    if (!hasLocal) {
+      setReady(true);
+      return;
+    }
+    setContent(local);
+    setReady(true);
+    void save(local).catch(() => {});
+  }, [initial]);
+
   return <Ctx.Provider value={{ content, ready, save, reset }}>{children}</Ctx.Provider>;
 }
 
@@ -377,7 +404,8 @@ export const ui = {
   unlocked: pair("Unlocked for this browser tab."),
   save: pair("Save changes"),
   restore: pair("Restore original text"),
-  saved: pair("Saved in this browser. The public tabs use this copy."),
+  saved: pair("Saved. Every visitor sees this copy."),
+  saveFailed: pair("Could not save for all visitors. Try again."),
   welcome: pair("Welcome"),
   contact: pair("Contact"),
   maintenance: pair("Maintenance"),
