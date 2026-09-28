@@ -38,13 +38,14 @@ function HoldingPage() {
       lng: p.lng as number,
       label: `${p.village} · ada ${p.ada} / parsel ${p.parsel}`,
     })) ?? [];
+  const cover = holding.gallery.some((shot) => shot.src === holding.hero) ? holding.hero : holding.gallery[0]?.src;
   const mapPins = pins.length > 0 ? pins : [{ lat: holding.lat, lng: holding.lng, label: tx(holding.name, lang) }];
 
   return (
     <div>
       <SiteHeader />
       <div className="relative h-80 sm:h-[28rem]">
-        <img src={holding.hero} alt="" className="h-full w-full object-cover" />
+        {cover ? <img src={cover} alt="" className="h-full w-full object-cover" /> : null}
         <div className="absolute inset-0 bg-olive-deep/40" />
         <div className="absolute bottom-0 mx-auto w-full max-w-6xl px-4 pb-8 text-paper">
           <p className="text-xs font-semibold tracking-widest text-gold uppercase">

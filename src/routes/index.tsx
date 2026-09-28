@@ -10,7 +10,10 @@ function Home() {
   const { content } = useSite();
   const { lang } = useLang();
   const { welcome, holdings } = content;
-  const hero = holdings[0]?.hero ?? "/photos/bosphorus.jpg";
+  const heroHolding = holdings[0];
+  const hero = heroHolding?.gallery.some((shot) => shot.src === heroHolding.hero)
+    ? heroHolding.hero
+    : (heroHolding?.gallery[0]?.src ?? "");
   return (
     <div>
       <SiteHeader />

@@ -260,31 +260,16 @@ function isText(value: unknown): value is Text {
 }
 
 function freshen(content: SiteContent): SiteContent {
-  const albums: Record<string, string> = {
-    kurucesme: "/photos/kurucesme/",
-    kagithane: "/photos/kagithane/",
-    tekirdag: "/photos/pinarca/",
-    dikili: "/photos/kabakum/",
-  };
   const migrated = { ...content.migrated };
   return {
     ...content,
     migrated,
     holdings: content.holdings.map((holding) => {
-      const marker = albums[holding.slug];
       const fresh = defaultContent.holdings.find((item) => item.slug === holding.slug);
-      let base = Array.isArray(holding.videos) ? holding : { ...holding, videos: [] };
-      const stock = new Set([
-        "/photos/bosphorus.jpg",
-        "/photos/lane.jpg",
-        "/photos/warehouse.jpg",
-        "/photos/dikili.jpg",
-        "/photos/track.jpg",
-        "/photos/tekirdag.jpg",
-        "/photos/ordu.jpg",
-      ]);
-      const stillStock = base.gallery.length > 0 && base.gallery.every((shot) => stock.has(shot.src));
-      let next = fresh && marker && stillStock ? { ...base, hero: fresh.hero, gallery: fresh.gallery, note: fresh.note } : base;
+      let next = Array.isArray(holding.videos) ? holding : { ...holding, videos: [] };
+      if (!next.gallery.some((shot) => shot.src === next.hero)) {
+        next = { ...next, hero: next.gallery[0]?.src ?? "" };
+      }
       if (next.slug === "kagithane" && Math.abs(next.lat - 41.0794) < 0.0002 && Math.abs(next.lng - 28.9732) < 0.0002) {
         next = { ...next, lat: 41.0796522, lng: 29.0017642, zoom: 17 };
       }
