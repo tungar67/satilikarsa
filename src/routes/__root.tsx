@@ -7,18 +7,16 @@ import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 import { SITE_DOMAIN } from "@/lib/site";
 
-const APP_NAME = "Gencel Holdings";
-
 export const Route = createRootRoute({
   loader: async () => {
     const remote = await loadPublished();
     return remote ? freshen(remote) : null;
   },
-  head: () => ({
+  head: ({ loaderData }) => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: `${APP_NAME} · ${SITE_DOMAIN}` },
+      { title: `${loaderData?.welcome.siteName.en ?? "Real Estate For Sale By the Owner"} · ${SITE_DOMAIN}` },
       { name: "description", content: "Five Turkish real-estate holdings: Bosphorus shops, a Kağıthane depot, and land in Dikili, Tekirdağ and Ordu." },
       { name: "theme-color", content: "#2a3323" },
     ],

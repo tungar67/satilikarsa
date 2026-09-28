@@ -226,7 +226,10 @@ const STORAGE_KEY = "gencel-site-v2";
 
 export const defaultContent: SiteContent = {
   welcome: {
-    siteName: pair("Gencel Holdings"),
+    siteName: {
+      en: "Real Estate For Sale By the Owner",
+      tr: "Sahibinden Satilik Emlak ve Arsa",
+    },
     tagline: pair("Private land · Türkiye"),
     kicker: pair("Five holdings · 34 deeds"),
     title: pair("Land and premises from the Bosphorus to the Black Sea"),

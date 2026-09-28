@@ -8,7 +8,6 @@ import { uploadPublic } from "@/lib/upload-media";
 import { tx, useLang, type Text } from "@/lib/lang";
 
 const GATE = "gencel";
-const GATE_KEY = "gencel-gate";
 
 export const Route = createFileRoute("/maintenance")({
   component: MaintenancePage,
@@ -27,17 +26,12 @@ function MaintenancePage() {
   draftRef.current = draft;
 
   useEffect(() => {
-    if (sessionStorage.getItem(GATE_KEY) === "1") setOpen(true);
-  }, []);
-
-  useEffect(() => {
     if (open && ready) setDraft(content);
   }, [open, ready]);
 
   function unlock(e: React.FormEvent) {
     e.preventDefault();
     if (password === GATE) {
-      sessionStorage.setItem(GATE_KEY, "1");
       setOpen(true);
       setError("");
       setDraft(content);
@@ -81,6 +75,7 @@ function MaintenancePage() {
     <div>
       <SiteHeader />
       <main className="mx-auto max-w-5xl px-4 py-10">
+        {open ? null : (
         <form onSubmit={unlock} className="rounded-card border border-line bg-card p-4">
           <label className="block text-sm font-medium">
             {tx(ui.password, lang)}
@@ -96,8 +91,8 @@ function MaintenancePage() {
             {tx(ui.unlock, lang)}
           </button>
           {error ? <p className="mt-2 text-sm text-gold">{error}</p> : null}
-          {open ? <p className="mt-2 text-sm text-olive">{tx(ui.unlocked, lang)}</p> : null}
         </form>
+        )}
 
         {open ? (
           <div className="mt-8 flex flex-col gap-4">
