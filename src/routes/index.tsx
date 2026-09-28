@@ -10,7 +10,8 @@ function Home() {
   const { content } = useSite();
   const { lang } = useLang();
   const { welcome, holdings } = content;
-  const heroHolding = holdings[0];
+  const ordered = [...holdings].sort((a, b) => a.index.localeCompare(b.index, undefined, { numeric: true }));
+  const heroHolding = ordered[0];
   const hero = heroHolding?.gallery.some((shot) => shot.src === heroHolding.hero)
     ? heroHolding.hero
     : (heroHolding?.gallery[0]?.src ?? "");
@@ -30,14 +31,16 @@ function Home() {
         <h2 className="text-4xl">{tx(welcome.portfolioTitle, lang)}</h2>
         <p className="mt-3 max-w-2xl leading-7 text-muted">{tx(welcome.portfolioLede, lang)}</p>
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          {holdings.map((h) => (
+          {ordered.map((h) => {
+            const photo = h.gallery.some((shot) => shot.src === h.hero) ? h.hero : (h.gallery[0]?.src ?? "");
+            return (
             <Link
               key={h.slug}
               to="/holdings/$slug"
               params={{ slug: h.slug }}
               className="overflow-hidden rounded-card border border-line bg-card"
             >
-              <img src={h.hero} alt="" className="h-48 w-full object-cover" />
+              {photo ? <img src={photo} alt="" className="h-48 w-full object-cover" /> : null}
               <div className="p-5">
                 <p className="text-xs font-semibold tracking-widest text-gold uppercase">
                   {h.index} · {tx(h.region, lang)}
@@ -46,7 +49,8 @@ function Home() {
                 <p className="mt-2 leading-6 text-muted">{tx(h.blurb, lang)}</p>
               </div>
             </Link>
-          ))}
+            );
+          })}
         </div>
       </main>
       <footer className="border-t border-line px-4 py-8 text-center text-sm text-muted">

@@ -37,7 +37,9 @@ export function SiteHeader() {
           <Link to="/" activeOptions={{ exact: true }} className={tabClass} activeProps={{ className: tabOn }}>
             {tx(ui.welcome, lang)}
           </Link>
-          {content.holdings.map((h) => (
+          {[...content.holdings]
+            .sort((a, b) => a.index.localeCompare(b.index, undefined, { numeric: true }))
+            .map((h) => (
             <Link
               key={h.slug}
               to="/holdings/$slug"
