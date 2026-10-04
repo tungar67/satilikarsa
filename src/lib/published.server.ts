@@ -1,4 +1,4 @@
-import { list, put } from "@vercel/blob";
+import { BlobNotFoundError, head, put } from "@vercel/blob";
 import { MAINTENANCE_PASSWORD } from "@/lib/gate";
 import type { SiteContent } from "@/lib/site-content";
 
@@ -13,13 +13,16 @@ function valid(value: unknown): value is SiteContent {
 
 export async function readPublished(): Promise<SiteContent | null> {
   if (!process.env.BLOB_READ_WRITE_TOKEN) return null;
-  const { blobs } = await list({ prefix: PATH, limit: 10 });
-  const blob = blobs.find((item) => item.pathname === PATH);
-  if (!blob) return null;
-  const res = await fetch(blob.url, { cache: "no-store" });
-  if (!res.ok) return null;
-  const json: unknown = await res.json();
-  return valid(json) ? json : null;
+  try {
+    const blob = await head(PATH);
+    const res = await fetch(blob.url, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json: unknown = await res.json();
+    return valid(json) ? json : null;
+  } catch (error) {
+    if (error instanceof BlobNotFoundError) return null;
+    throw error;
+  }
 }
 
 export async function writePublished(password: string, content: SiteContent): Promise<SiteContent> {

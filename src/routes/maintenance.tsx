@@ -314,7 +314,14 @@ function HoldingEditor({ holding, onChange }: { holding: PublicHolding; onChange
               }
               const next = [...holding.gallery, ...added];
               onChange({ ...holding, gallery: next, hero: holding.hero || next[0]?.src || "" });
-            })().catch(() => window.alert("Could not upload that picture."));
+            })().catch((error: unknown) => {
+              const message = error instanceof Error ? error.message : "";
+              window.alert(
+                message.toLowerCase().includes("suspended")
+                  ? "Picture storage is paused on the hosting account, so the picture was not saved."
+                  : "Could not upload that picture.",
+              );
+            });
           }}
         />
       </label>
