@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useState } from "react";
 import { holdings, type Holding as RawHolding } from "@/data/properties";
 import { MAINTENANCE_PASSWORD } from "@/lib/gate";
 import { text, type Text } from "@/lib/lang";
@@ -268,10 +268,6 @@ type Store = {
 
 const Ctx = createContext<Store | null>(null);
 
-function isText(value: unknown): value is Text {
-  return !!value && typeof value === "object" && "en" in value && "tr" in value;
-}
-
 const PREVIOUS_CONTACT_LEDE =
   "Tell us which holding you want to discuss. The form opens your email program addressed to the office.";
 
@@ -346,32 +342,13 @@ export function freshen(content: SiteContent): SiteContent {
   };
 }
 
-function load(): SiteContent {
-  if (typeof window === "undefined") return defaultContent;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultContent;
-    const parsed = JSON.parse(raw) as SiteContent;
-    if (!isText(parsed?.welcome?.title) || !Array.isArray(parsed.holdings)) return defaultContent;
-    return freshen(parsed);
-  } catch {
-    return defaultContent;
-  }
-}
-
 export function ContentProvider({ children, initial }: { children: React.ReactNode; initial: SiteContent | null }) {
   const [content, setContent] = useState<SiteContent>(initial ?? defaultContent);
-  const [ready, setReady] = useState(initial != null);
-  const started = useRef(false);
+  const ready = true;
 
   const save = async (next: SiteContent) => {
     const stored = await publishContent({ data: { password: MAINTENANCE_PASSWORD, content: await publishable(next) } });
     setContent(stored);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
-    } catch {
-      /* The server copy is what visitors see. */
-    }
   };
 
   const reset = async () => {
@@ -379,29 +356,6 @@ export function ContentProvider({ children, initial }: { children: React.ReactNo
     await clearClips();
     await save(structuredClone(defaultContent));
   };
-
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    if (initial) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-      } catch {
-        /* ignore quota */
-      }
-      setReady(true);
-      return;
-    }
-    const local = load();
-    const hasLocal = localStorage.getItem(STORAGE_KEY);
-    if (!hasLocal) {
-      setReady(true);
-      return;
-    }
-    setContent(local);
-    setReady(true);
-    void save(local).catch(() => {});
-  }, [initial]);
 
   return <Ctx.Provider value={{ content, ready, save, reset }}>{children}</Ctx.Provider>;
 }

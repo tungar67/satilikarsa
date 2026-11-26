@@ -8,6 +8,8 @@ import appCss from "../styles.css?url";
 import { SITE_DOMAIN } from "@/lib/site";
 
 export const Route = createRootRoute({
+  // Saved pages are the same on every screen. Don't ask the server again on each click.
+  staleTime: Number.POSITIVE_INFINITY,
   loader: async () => {
     const remote = await loadPublished();
     return remote ? freshen(remote) : null;
