@@ -48,7 +48,9 @@ describe("deliverContact", () => {
     assert.deepEqual(await deliverContact(base), { ok: true });
     assert.equal(auth, "Bearer re_test");
     assert.equal(body?.from, "Satilik Arsa <onboarding@resend.dev>");
-    assert.deepEqual(body?.to, ["Nestatellc@gmail.com"]);
+    assert.deepEqual(body?.to, ["nestatellc@gmail.com"]);
+    assert.equal(body?.cc, undefined);
+    assert.equal(body?.bcc, undefined);
     assert.equal(body?.reply_to, "ayse@example.com");
     const text = String(body?.text);
     for (const value of [
@@ -61,6 +63,39 @@ describe("deliverContact", () => {
     ]) {
       assert.match(text, new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     }
+  });
+
+  it("uses only the lowercase account inbox while the sender is unverified", async () => {
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.CONTACT_TO_EMAIL = "Tungar@NestateLLC.com";
+    let body: Record<string, unknown> | undefined;
+    globalThis.fetch = (async (_input, init) => {
+      body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(JSON.stringify({ id: "email_1" }), { status: 200 });
+    }) as typeof fetch;
+
+    assert.deepEqual(await deliverContact({ ...base, email: "Visitor@Example.com" }), { ok: true });
+    assert.deepEqual(body?.to, ["nestatellc@gmail.com"]);
+    assert.equal(body?.reply_to, "Visitor@Example.com");
+    assert.equal(body?.cc, undefined);
+    assert.equal(body?.bcc, undefined);
+    assert.equal(JSON.stringify(body).includes("tungar@nestatellc.com"), false);
+  });
+
+  it("sends to a configured inbox once the from-address is on a verified domain", async () => {
+    process.env.RESEND_API_KEY = "re_test";
+    process.env.CONTACT_FROM_EMAIL = "Satilik Arsa <iletisim@satilikarsa.win>";
+    process.env.CONTACT_TO_EMAIL = "Office@Example.com";
+    let body: Record<string, unknown> | undefined;
+    globalThis.fetch = (async (_input, init) => {
+      body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(JSON.stringify({ id: "email_1" }), { status: 200 });
+    }) as typeof fetch;
+
+    assert.deepEqual(await deliverContact(base), { ok: true });
+    assert.equal(body?.from, "Satilik Arsa <iletisim@satilikarsa.win>");
+    assert.deepEqual(body?.to, ["office@example.com"]);
+    assert.equal(body?.reply_to, "ayse@example.com");
   });
 
   it("does not call the provider when the honeypot is filled", async () => {

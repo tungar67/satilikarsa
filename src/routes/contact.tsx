@@ -29,8 +29,6 @@ function ContactPage() {
   const [status, setStatus] = useState<Status>("idle");
   const sending = useRef(false);
 
-  const office = content.contact.email.trim();
-  const officeShown = isPlainEmail(office) ? office : "";
   const field =
     "mt-1 w-full rounded-xl border border-line bg-paper px-3 py-3 text-ink outline-none";
   const notice =
@@ -102,11 +100,6 @@ function ContactPage() {
         <a href={SITE_URL} className="mt-3 inline-block text-sm text-olive">
           {SITE_DOMAIN}
         </a>
-        {officeShown ? (
-          <a href={`mailto:${officeShown}`} className="mt-1 block text-sm text-olive">
-            {officeShown}
-          </a>
-        ) : null}
         <form
           onSubmit={onSubmit}
           className="relative mt-8 rounded-card border border-line bg-card p-5"
