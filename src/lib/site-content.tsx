@@ -72,8 +72,8 @@ const tr: Record<string, string> = {
   "Title figures from TAKBİS extracts. Photographs are atmosphere, not the deeded view. Map pins are indicative.":
     "Rakamlar TAKBİS dökümündendir. Fotoğraflar atmosfer içindir, tapudaki görüntü değildir. Harita işaretleri yaklaşıktır.",
   Contact: "İletişim",
-  "Tell us which holding you want to discuss. The form opens your email program addressed to the office.":
-    "Hangi varlığı konuşmak istediğinizi yazın. Form, ofise adresli e-postanızı açar.",
+  "Tell us which holding you want to discuss. Your message goes straight to the office.":
+    "Hangi varlığı konuşmak istediğinizi yazın. Mesajınız doğrudan ofise gider.",
   "Kuruçeşme shops": "Kuruçeşme dükkanları",
   "İstanbul · Beşiktaş": "İstanbul · Beşiktaş",
   "Two deeds, one waterfront building": "İki tapu, tek sahil yapısı",
@@ -184,10 +184,17 @@ const tr: Record<string, string> = {
   Holding: "Varlık",
   General: "Genel",
   Message: "Mesaj",
-  "Send email": "E-posta gönder",
-  "No office email is set yet. Add one on the Maintenance tab.":
-    "Ofis e-postası henüz yok. Bakım sekmesinde ekleyin.",
-  "Your email program should open with this message.": "E-posta programınız bu iletiyle açılmalı.",
+  "Send message": "Mesajı gönder",
+  optional: "isteğe bağlı",
+  "Sending…": "Gönderiliyor…",
+  "Your message was sent to the office. Any reply will come to the email address you entered.":
+    "Mesajınız ofise gönderildi. Yanıt, yazdığınız e-posta adresine gelir.",
+  "Please enter your name, a valid email address, and a message.":
+    "Lütfen adınızı, geçerli bir e-posta adresini ve mesajınızı yazın.",
+  "The office mailbox is not ready yet. Please try again later.":
+    "Ofis kutusu henüz hazır değil. Lütfen daha sonra yeniden deneyin.",
+  "We could not send your message. Please try again in a moment.":
+    "Mesajınız gönderilemedi. Lütfen biraz sonra yeniden deneyin.",
   "Maintenance password": "Bakım parolası",
   Unlock: "Aç",
   "That password is not correct.": "Parola doğru değil.",
@@ -246,7 +253,7 @@ export const defaultContent: SiteContent = {
   },
   contact: {
     title: pair("Contact"),
-    lede: pair("Tell us which holding you want to discuss. The form opens your email program addressed to the office."),
+    lede: pair("Tell us which holding you want to discuss. Your message goes straight to the office."),
     email: "",
   },
   holdings: holdings.map(lift),
@@ -265,10 +272,25 @@ function isText(value: unknown): value is Text {
   return !!value && typeof value === "object" && "en" in value && "tr" in value;
 }
 
+const PREVIOUS_CONTACT_LEDE =
+  "Tell us which holding you want to discuss. The form opens your email program addressed to the office.";
+
+function freshenContact(contact: SiteContent["contact"] | undefined): SiteContent["contact"] {
+  if (!contact?.lede || contact.lede.en === PREVIOUS_CONTACT_LEDE) {
+    return {
+      title: contact?.title ?? defaultContent.contact.title,
+      lede: defaultContent.contact.lede,
+      email: contact?.email ?? "",
+    };
+  }
+  return { ...contact, email: contact.email ?? "" };
+}
+
 export function freshen(content: SiteContent): SiteContent {
   const migrated = { ...content.migrated };
   return {
     ...content,
+    contact: freshenContact(content.contact),
     migrated,
     holdings: content.holdings.map((holding) => {
       const fresh = defaultContent.holdings.find((item) => item.slug === holding.slug);
@@ -398,9 +420,13 @@ export const ui = {
   holding: pair("Holding"),
   general: pair("General"),
   message: pair("Message"),
-  send: pair("Send email"),
-  noEmail: pair("No office email is set yet. Add one on the Maintenance tab."),
-  opened: pair("Your email program should open with this message."),
+  send: pair("Send message"),
+  optional: pair("optional"),
+  sending: pair("Sending…"),
+  sent: pair("Your message was sent to the office. Any reply will come to the email address you entered."),
+  invalidContact: pair("Please enter your name, a valid email address, and a message."),
+  mailboxUnavailable: pair("The office mailbox is not ready yet. Please try again later."),
+  sendFailed: pair("We could not send your message. Please try again in a moment."),
   password: pair("Maintenance password"),
   unlock: pair("Unlock"),
   badPassword: pair("That password is not correct."),

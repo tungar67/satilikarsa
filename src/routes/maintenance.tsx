@@ -117,6 +117,9 @@ function MaintenancePage() {
               <BiField label="Heading" value={draft.contact.title} onChange={(v) => setDraft((d) => ({ ...d, contact: { ...d.contact, title: v } }))} />
               <BiField label="Introduction" value={draft.contact.lede} onChange={(v) => setDraft((d) => ({ ...d, contact: { ...d.contact, lede: v } }))} rows={3} />
               <Field label="Office email" value={draft.contact.email} onChange={(v) => setDraft((d) => ({ ...d, contact: { ...d.contact, email: v } }))} />
+              <p className="text-sm leading-6 text-muted">
+                Optional. If you enter an address, visitors see it on the contact page. The form itself emails the office inbox set up with the host, and the reply goes to the visitor.
+              </p>
             </Section>
 
             <div className="flex flex-wrap gap-3">
